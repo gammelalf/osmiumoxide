@@ -1,0 +1,21 @@
+[package]
+name = "osmiumoxide"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bytes = "~1"
+flate2 = "~1"
+prost = "~0.12"
+thiserror = "~1"
+rayon = "~1"
+log = "~0.4"
+env_logger = "~0.10"
+
+[build-dependencies]
+prost-build = "~0.12"
+
+[profile.release]
+debug = true
