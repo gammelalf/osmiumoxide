@@ -6,12 +6,14 @@ use log::{debug, error, trace, warn};
 use rayon::prelude::*;
 use thiserror::Error;
 
-use crate::fileformat::{FileFormatReader, ParseError, RawBlock, ReadError};
+use crate::blobs::{iter_blobs, Blob, ReadError};
 use crate::osmformat::{Block, DataBlock};
+use crate::parse::{parse_blob, ParseError};
 
-pub mod fileformat;
+pub mod blobs;
 pub mod node_index;
 pub mod osmformat;
+pub mod parse;
 pub(crate) mod util;
 
 pub mod proto {
@@ -26,8 +28,8 @@ pub mod proto {
 /// - All other errors just skip their block.
 ///
 /// When this function doesn't suffice (you need more error handling or control over speed),
-/// use [`fileformat::read_fileformat`] to iterate over the file's [`RawBlock`](fileformat::RawBlock)s
-/// and [`RawBlock::parse`] to decompress and parse them.
+/// use [`blobs::iter_blobs`] to iterate over the file's [`Blob`]s
+/// and [`parse::parse_blob`] to decompress and decode them.
 pub fn read(path: impl AsRef<Path>) -> Result<impl Iterator<Item = DataBlock>, Error> {
     Ok(read_process_header(path.as_ref())?
         .take_while(Result::is_ok)
@@ -45,11 +47,13 @@ pub fn read_par(path: impl AsRef<Path>) -> Result<impl ParallelIterator<Item = D
 }
 
 /// Helper function used in `read...` to open the file and process its header
-fn read_process_header(path: &Path) -> Result<FileFormatReader<File>, Error> {
-    let mut iter = fileformat::read_fileformat(File::open(path).map_err(Error::FileError)?);
+fn read_process_header(
+    path: &Path,
+) -> Result<impl Iterator<Item = Result<Blob, ReadError>>, Error> {
+    let mut blobs = iter_blobs(File::open(path).map_err(Error::FileError)?);
 
-    let block = iter.next().ok_or(Error::MissingHeader)??;
-    let Block::Header(header) = block.parse()? else {
+    let blob = blobs.next().ok_or(Error::MissingHeader)??;
+    let Block::Header(header) = parse_blob(blob)? else {
         return Err(Error::MissingHeader);
     };
 
@@ -58,12 +62,12 @@ fn read_process_header(path: &Path) -> Result<FileFormatReader<File>, Error> {
         return Err(Error::UnknownFeature(feature.to_string()));
     }
 
-    return Ok(iter);
+    return Ok(blobs);
 }
 
 /// Helper function used in `read...` to process the stream of blocks
-fn read_process_block(result: Result<RawBlock, ReadError>) -> Option<DataBlock> {
-    let raw = match result {
+fn read_process_block(result: Result<Blob, ReadError>) -> Option<DataBlock> {
+    let blob = match result {
         Ok(raw) => raw,
         Err(err) => {
             error!("Failed to read file");
@@ -71,7 +75,7 @@ fn read_process_block(result: Result<RawBlock, ReadError>) -> Option<DataBlock> 
             return None;
         }
     };
-    let block = match raw.parse() {
+    let block = match parse_blob(blob) {
         Ok(block) => block,
         Err(err) => {
             error!("Failed to parse block");
@@ -85,8 +89,8 @@ fn read_process_block(result: Result<RawBlock, ReadError>) -> Option<DataBlock> 
             None
         }
         Block::Data(block) => Some(block),
-        Block::Unknown(_) => {
-            warn!("Skipping unknown block");
+        Block::Unknown(string, _) => {
+            warn!("Skipping unknown block of type \"{string}\"");
             None
         }
     }
@@ -118,7 +122,7 @@ impl From<ReadError> for Error {
     fn from(value: ReadError) -> Self {
         match value {
             ReadError::Io(error) => Self::FileError(error),
-            ReadError::Proto(error) => Self::ProstError(error),
+            ReadError::Decode(error) => Self::ProstError(error),
         }
     }
 }
@@ -126,7 +130,7 @@ impl From<ParseError> for Error {
     fn from(value: ParseError) -> Self {
         match value {
             ParseError::Io(error) => Self::ComprError(error),
-            ParseError::Proto(error) => Self::ProstError(error),
+            ParseError::Decode(error) => Self::ProstError(error),
         }
     }
 }

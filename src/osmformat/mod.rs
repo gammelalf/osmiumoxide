@@ -14,7 +14,7 @@ use crate::proto;
 pub enum Block {
     Header(HeaderBlock),
     Data(DataBlock),
-    Unknown(Bytes),
+    Unknown(String, Bytes),
 }
 
 #[derive(Debug)]
