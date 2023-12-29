@@ -1,5 +1,5 @@
-use crate::osmformat::tags::Tags;
-use crate::osmformat::DataBlock;
+use crate::blocks::tags::Tags;
+use crate::blocks::DataBlock;
 use crate::proto;
 use crate::util::iter::IteratorExt;
 

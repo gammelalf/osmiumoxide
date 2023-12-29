@@ -1,8 +1,15 @@
+//! Mid-level parsing of `.osm.pbf` files
+//!
+//! This modules parses [`Blob`]s while avoiding copying.
+//! To achieve this, some API convenience has to be sacrificed.
+
 mod node;
 mod tags;
 mod ways;
 
 use std::borrow::Cow;
+use std::fmt;
+use std::fmt::Formatter;
 use std::str::from_utf8_unchecked;
 
 use bytes::Bytes;
@@ -11,10 +18,30 @@ pub use self::node::Node;
 pub use self::ways::Way;
 use crate::proto;
 
+crate::doc_imports! {
+    use crate::blobs::Blob;
+}
+
+/// A parsed `.osm.pbf` file's block
 pub enum Block {
+    /// A header block stores meta-information about the file
     Header(HeaderBlock),
+
+    /// A data block stores OSM's primitives: Nodes, Relations and Ways
     Data(DataBlock),
+
+    /// A block of unknown type
     Unknown(String, Bytes),
+}
+
+impl fmt::Debug for Block {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Block::Header(header) => f.debug_tuple("Block::Header").field(&*header).finish(),
+            Block::Data(_) => f.debug_tuple("Block::Data").finish(),
+            Block::Unknown(string, _) => f.debug_tuple("Block::Unknown").field(&*string).finish(),
+        }
+    }
 }
 
 #[derive(Debug)]

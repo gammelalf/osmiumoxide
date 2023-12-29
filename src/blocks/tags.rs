@@ -1,4 +1,4 @@
-use crate::osmformat::DataBlock;
+use crate::blocks::DataBlock;
 
 pub(crate) struct Tags<'a> {
     pub(crate) keys: &'a Vec<u32>,
