@@ -7,7 +7,7 @@ use prost::Message;
 use thiserror::Error;
 
 use crate::blobs::{Blob, BlobType};
-use crate::osmformat::{Block, DataBlock, HeaderBlock};
+use crate::blocks::{Block, DataBlock, HeaderBlock};
 use crate::proto;
 pub use crate::proto::blob::Data as BlockCompression;
 

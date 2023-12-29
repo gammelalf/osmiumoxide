@@ -7,15 +7,17 @@ use rayon::prelude::*;
 use thiserror::Error;
 
 use crate::blobs::{iter_blobs, Blob, ReadError};
-use crate::osmformat::{Block, DataBlock};
+use crate::blocks::{Block, DataBlock};
 use crate::parse::{parse_blob, ParseError};
 
 pub mod blobs;
+pub mod blocks;
+pub mod collector;
 pub mod node_index;
-pub mod osmformat;
 pub mod parse;
-pub(crate) mod util;
+pub mod util;
 
+/// Auto-generated protobuf messages
 pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/osmpbf.rs"));
 }
@@ -135,6 +137,7 @@ impl From<ParseError> for Error {
     }
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! doc_imports {
     ($(use $path:path;)+) => {
