@@ -134,3 +134,13 @@ impl From<ParseError> for Error {
         }
     }
 }
+
+#[macro_export]
+macro_rules! doc_imports {
+    ($(use $path:path;)+) => {
+        $(
+            #[cfg(doc)]
+            use $path;
+        )+
+    };
+}
