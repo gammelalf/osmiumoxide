@@ -4,8 +4,9 @@
 //! To achieve this, some API convenience has to be sacrificed.
 
 mod node;
+mod relation;
 mod tags;
-mod ways;
+mod way;
 
 use std::borrow::Cow;
 use std::fmt;
@@ -15,7 +16,8 @@ use std::str::from_utf8_unchecked;
 use bytes::Bytes;
 
 pub use self::node::Node;
-pub use self::ways::Way;
+pub use self::relation::{Member, MemberType, Relation};
+pub use self::way::Way;
 use crate::proto;
 
 crate::doc_imports! {

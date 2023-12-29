@@ -128,9 +128,6 @@ fn value_ref<K, V>(entry: &(K, V)) -> &V {
     &entry.1
 }
 
-fn key_mut<K, V>(entry: &mut (K, V)) -> &mut K {
-    &mut entry.0
-}
 fn value_mut<K, V>(entry: &mut (K, V)) -> &mut V {
     &mut entry.1
 }

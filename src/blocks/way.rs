@@ -32,17 +32,17 @@ impl<'a> Way<'a> {
         self.way.id
     }
 
-    /// Iterate over the node's tags as key-value pairs
+    /// Iterate over the way's tags as key-value pairs
     pub fn tags(&self) -> impl Iterator<Item = (&'a str, &'a str)> + 'a {
         self.tags.iter(&self.block)
     }
 
-    /// Iterate over the node's tags' keys
+    /// Iterate over the way's tags' keys
     pub fn keys(&self) -> impl Iterator<Item = &'a str> + 'a {
         self.tags.keys(&self.block)
     }
 
-    /// Iterate over the node's tags' keys
+    /// Iterate over the way's tags' keys
     pub fn values(&self) -> impl Iterator<Item = &'a str> + 'a {
         self.tags.values(&self.block)
     }
