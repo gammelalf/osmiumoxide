@@ -117,6 +117,17 @@ impl<R: Read> Iterator for BlobIter<R> {
     }
 }
 
+fn read_u32(reader: &mut impl Read) -> io::Result<Option<u32>> {
+    let mut buffer = [0; 4];
+    if let Err(err) = reader.read_exact(&mut buffer) {
+        return match err.kind() {
+            io::ErrorKind::UnexpectedEof => Ok(None),
+            _ => Err(err),
+        };
+    }
+    Ok(Some(u32::from_be_bytes(buffer)))
+}
+
 /// An error which occurred while reading from an `.osm.pbf` file
 ///
 /// **Note** this error is for reading not parsing.

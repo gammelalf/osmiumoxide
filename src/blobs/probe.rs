@@ -13,6 +13,11 @@ use std::io::{Read, Seek, SeekFrom, Take};
 use std::mem::size_of;
 use std::path::Path;
 
+use prost::Message;
+
+use crate::blobs::{read_u32, ReadError};
+use crate::proto;
+
 crate::doc_imports! {
     use crate::blobs::iter_blobs;
     use crate::proto;
@@ -38,6 +43,51 @@ pub fn mass_open(path: impl AsRef<Path>, num: usize) -> io::Result<Vec<Take<File
     }
 
     Ok(files.into())
+}
+
+pub fn iter_blocks(
+    mut reader: impl Read + Seek,
+) -> impl Iterator<Item = Result<(SeekFrom, usize), ReadError>> {
+    struct Iter<R> {
+        reader: R,
+        buffer: Vec<u8>,
+    };
+    impl<R: Read + Seek> Iter<R> {
+        fn read(&mut self) -> Result<Option<(SeekFrom, usize)>, ReadError> {
+            let Some(header_size) = read_u32(&mut self.reader)? else {
+                return Ok(None);
+            };
+            let header_size = header_size as usize;
+
+            if self.buffer.len() < header_size {
+                self.buffer.resize(header_size, 0);
+            }
+            let buffer = &mut self.buffer[..header_size];
+
+            self.reader.read_exact(buffer)?;
+
+            let header = proto::BlobHeader::decode(&*buffer)?;
+
+            let post_body = self
+                .reader
+                .seek(SeekFrom::Current(header.datasize as i64))?;
+            Ok(Some((
+                SeekFrom::Start(post_body - header.datasize as u64),
+                header.datasize as usize,
+            )))
+        }
+    }
+    impl<R: Read + Seek> Iterator for Iter<R> {
+        type Item = Result<(SeekFrom, usize), ReadError>;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.read().transpose()
+        }
+    }
+    Iter {
+        reader,
+        buffer: Vec::new(),
+    }
 }
 
 /// Find the next blob in a file

@@ -13,7 +13,6 @@ use crate::parse::{parse_blob, ParseError};
 pub mod blobs;
 pub mod blocks;
 pub mod collector;
-pub mod node_index;
 pub mod parse;
 pub mod util;
 
